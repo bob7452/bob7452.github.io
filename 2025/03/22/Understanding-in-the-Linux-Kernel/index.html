@@ -14,7 +14,7 @@
 <meta property="og:description" content="Understanding Kconfig in the Linux Kernel Kconfig is a configuration system used in the Linux kernel and many large C&#x2F;C++ projects to manage build-time options. It defines user-selectable features, mo">
 <meta property="og:locale" content="zh_TW">
 <meta property="article:published_time" content="2025-03-22T12:52:43.000Z">
-<meta property="article:modified_time" content="2025-03-22T12:58:42.096Z">
+<meta property="article:modified_time" content="2025-03-22T13:03:13.976Z">
 <meta property="article:author" content="Tao">
 <meta property="article:tag" content="Linux - Understanding Series">
 <meta name="twitter:card" content="summary">
@@ -139,9 +139,20 @@
 <li><strong>Makefile + build system</strong> uses <code>.config</code> to compile selected modules and features.</li>
 </ol>
 <hr>
-<h2 id="📦-Example-Kconfig-Snippet">📦 Example <code>Kconfig</code> Snippet</h2>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">config MY_DRIVER</span><br><span class="line">    tristate &quot;Enable my custom driver&quot;</span><br><span class="line">    depends on NET</span><br><span class="line">    help</span><br><span class="line">      This enables support for my custom driver.</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">當然可以！以下是完整整理好的 Markdown 文件，結合你提供的 Makefile 和我剛剛的說明：</span><br><span class="line"></span><br><span class="line">```markdown</span><br><span class="line"># How `Kconfig` Options Are Passed into the Makefile (`CONFIG_*` Symbols)</span><br><span class="line"></span><br><span class="line">In the Linux kernel build system, `Kconfig` and `Makefile` (`Kbuild`) work closely together. The configuration options defined in `Kconfig` (such as `CONFIG_NVME_CORE`) are passed into the build process and control which object files get compiled and linked.</span><br><span class="line"></span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">## 🔁 Flow: From `Kconfig` to `Makefile`</span><br><span class="line"></span><br><span class="line">1. **You run a config tool**, like:</span><br><span class="line">   - `make menuconfig`</span><br><span class="line">   - `make defconfig`</span><br><span class="line">   - `make oldconfig`</span><br><span class="line"></span><br><span class="line">2. **These tools read the `Kconfig` files**, which define options like:</span><br><span class="line"></span><br><span class="line">   ```kconfig</span><br><span class="line">   config NVME_CORE</span><br><span class="line">       bool &quot;NVMe core support&quot;</span><br><span class="line">       default y</span><br></pre></td></tr></table></figure>
-<ol start="3">
+<h2 id="🔁-Flow-From-Kconfig-to-Makefile">🔁 Flow: From <code>Kconfig</code> to <code>Makefile</code></h2>
+<ol>
+<li>
+<p><strong>You run a config tool</strong>, like:</p>
+<ul>
+<li><code>make menuconfig</code></li>
+<li><code>make defconfig</code></li>
+<li><code>make oldconfig</code></li>
+</ul>
+</li>
+<li>
+<p><strong>These tools read the <code>Kconfig</code> files</strong>, which define options like:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">config NVME_CORE</span><br><span class="line">    bool &quot;NVMe core support&quot;</span><br><span class="line">    default y</span><br></pre></td></tr></table></figure>
+</li>
 <li>
 <p><strong>Your selections are saved to <code>.config</code></strong> in the kernel source root.</p>
 </li>
@@ -192,7 +203,6 @@
 <h2 id="📄-Real-world-Example-from-Makefile">📄 Real-world Example from <code>Makefile</code></h2>
 <figure class="highlight make"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">ccflags-y                             += -I<span class="variable">$(src)</span></span><br><span class="line"></span><br><span class="line">obj-<span class="variable">$(CONFIG_NVME_CORE)</span>              += nvme-core.o</span><br><span class="line">obj-<span class="variable">$(CONFIG_BLK_DEV_NVME)</span>           += nvme.o</span><br><span class="line">obj-<span class="variable">$(CONFIG_NVME_FABRICS)</span>           += nvme-fabrics.o</span><br><span class="line">obj-<span class="variable">$(CONFIG_NVME_RDMA)</span>              += nvme-rdma.o</span><br><span class="line">obj-<span class="variable">$(CONFIG_NVME_FC)</span>                += nvme-fc.o</span><br><span class="line">obj-<span class="variable">$(CONFIG_NVME_TCP)</span>               += nvme-tcp.o</span><br><span class="line">obj-<span class="variable">$(CONFIG_NVME_APPLE)</span>             += nvme-apple.o</span><br><span class="line"></span><br><span class="line">nvme-core-y                          += core.o ioctl.o sysfs.o pr.o</span><br><span class="line">nvme-core-<span class="variable">$(CONFIG_NVME_VERBOSE_ERRORS)</span> += constants.o</span><br><span class="line">nvme-core-<span class="variable">$(CONFIG_TRACING)</span>          += trace.o</span><br><span class="line">nvme-core-<span class="variable">$(CONFIG_NVME_MULTIPATH)</span>   += multipath.o</span><br><span class="line">nvme-core-<span class="variable">$(CONFIG_BLK_DEV_ZONED)</span>    += zns.o</span><br><span class="line">nvme-core-<span class="variable">$(CONFIG_FAULT_INJECTION_DEBUG_FS)</span> += fault_inject.o</span><br><span class="line">nvme-core-<span class="variable">$(CONFIG_NVME_HWMON)</span>       += hwmon.o</span><br><span class="line">nvme-core-<span class="variable">$(CONFIG_NVME_HOST_AUTH)</span>   += auth.o</span><br><span class="line"></span><br><span class="line">nvme-y                               += pci.o</span><br><span class="line">nvme-fabrics-y                       += fabrics.o</span><br><span class="line">nvme-rdma-y                          += rdma.o</span><br><span class="line">nvme-fc-y                            += fc.o</span><br><span class="line">nvme-tcp-y                           += tcp.o</span><br><span class="line">nvme-apple-y                         += apple.o</span><br></pre></td></tr></table></figure>
 <p>These rules dynamically include files based on <code>Kconfig</code> options set by the user.</p>
-<hr>
 <h2 id="✅-Summary">✅ Summary</h2>
 <table>
 <thead>
@@ -217,8 +227,6 @@
 </tbody>
 </table>
 <p>The <code>CONFIG_*</code> flags seen in the Makefile are <strong>not manually defined</strong>, but are instead automatically generated based on the user’s configuration selected via <code>Kconfig</code>.</p>
-<pre><code>
-你可以直接貼到 Markdown 編輯器或 Notion 裡使用。如果你想要附帶流程圖或是變成 HTML 文件也可以跟我說！</code></pre>
 
       
     </div>
