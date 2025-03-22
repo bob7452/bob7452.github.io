@@ -71,6 +71,73 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-Understanding-and-A-Comparison-of-Linux-Kernel-Cleanup-Commands" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/03/22/Understanding-and-A-Comparison-of-Linux-Kernel-Cleanup-Commands/" class="article-date">
+  <time class="dt-published" datetime="2025-03-22T11:51:18.000Z" itemprop="datePublished">2025-03-22</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2025/03/22/Understanding-and-A-Comparison-of-Linux-Kernel-Cleanup-Commands/">Understanding A Comparison of Linux Kernel Cleanup Commands</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>make clean</code></strong></td>
+<td>Deletes most generated files, such as object files (<code>*.o</code>) and kernel object files (<code>*.ko</code>), but retains the kernel configuration file (<code>.config</code>) and enough build support to build external modules.</td>
+</tr>
+<tr>
+<td><strong><code>make mrproper</code></strong></td>
+<td>Performs all actions of <code>make clean</code> and additionally removes the current configuration (<code>.config</code>) and all other generated files, returning the source tree to a pristine state.</td>
+</tr>
+<tr>
+<td><strong><code>make distclean</code></strong></td>
+<td>Executes all actions of <code>make mrproper</code> and further removes editor backup files, patch leftover files, and similar artifacts, effectively restoring the source tree to its original state as distributed.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>🧹 <strong>Cleanup Scope Summary:</strong></p>
+<p>The order of increasing cleanup scope is:</p>
+<p><code>make clean</code> &lt; <code>make mrproper</code> &lt; <code>make distclean</code></p>
+</blockquote>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://bob7452.github.io/2025/03/22/Understanding-and-A-Comparison-of-Linux-Kernel-Cleanup-Commands/" data-id="cm8k5gxy10000b2j60hiighrk" data-title="Understanding A Comparison of Linux Kernel Cleanup Commands" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-Linux-NVMe-Driver" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2025/03/15/Linux-NVMe-Driver/" class="article-date">
@@ -254,6 +321,10 @@
     <h3 class="widget-title">letzter Beitrag</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2025/03/22/Understanding-and-A-Comparison-of-Linux-Kernel-Cleanup-Commands/">Understanding A Comparison of Linux Kernel Cleanup Commands</a>
+          </li>
         
           <li>
             <a href="/2025/03/15/Linux-NVMe-Driver/">Linux NVMe Driver</a>
