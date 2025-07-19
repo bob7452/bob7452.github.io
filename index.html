@@ -228,7 +228,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://bob7452.github.io/2025/03/22/Understanding-in-the-Linux-Kernel/" data-id="cmd9swnw10004udj62oj1b7mh" data-title="Understanding  in the Linux Kernel" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://bob7452.github.io/2025/03/22/Understanding-in-the-Linux-Kernel/" data-id="cmd9u1ry60004d5j68d6f80pp" data-title="Understanding  in the Linux Kernel" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -295,7 +295,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://bob7452.github.io/2025/03/22/Understanding-and-A-Comparison-of-Linux-Kernel-Cleanup-Commands/" data-id="cmd9swnvz0001udj6g6fefwqc" data-title="Understanding A Comparison of Linux Kernel Cleanup Commands" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://bob7452.github.io/2025/03/22/Understanding-and-A-Comparison-of-Linux-Kernel-Cleanup-Commands/" data-id="cmd9u1ry60003d5j6h3fq27uj" data-title="Understanding A Comparison of Linux Kernel Cleanup Commands" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -383,11 +383,152 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://bob7452.github.io/2025/03/15/Linux-NVMe-Driver/" data-id="cmd9swnvw0000udj68gcbhhr9" data-title="Linux NVMe Driver" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://bob7452.github.io/2025/03/15/Linux-NVMe-Driver/" data-id="cmd9u1ry10000d5j6edng77ps" data-title="Linux NVMe Driver" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux-Driver/" rel="tag">Linux - Driver</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-Simple-Rootfs-Implement" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/03/15/Simple-Rootfs-Implement/" class="article-date">
+  <time class="dt-published" datetime="2025-03-15T15:15:03.000Z" itemprop="datePublished">2025-03-15</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2025/03/15/Simple-Rootfs-Implement/">Simple Rootfs</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1>Minimal Linux RootFS on x86 with QEMU &amp; BusyBox</h1>
+<p>這份說明整理了從 0 建立一個可開機的 x86 Linux RootFS 的過程，適合用來練習 Linux Kernel Modules 與 RootFS 結構。</p>
+<hr>
+<h2 id="🔧-目標">🔧 目標</h2>
+<ul>
+<li>使用 BusyBox 製作最簡 RootFS</li>
+<li>利用 QEMU 執行 x86 kernel</li>
+<li>理解 init 流程與錯誤排查</li>
+<li>瞭解靜態與動態連結差異</li>
+</ul>
+<hr>
+<h2 id="🧱-檔案與目錄結構">🧱 檔案與目錄結構</h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">kernel-rootfs/</span><br><span class="line">├── bzImage              # 已編譯的 Linux Kernel (x86)</span><br><span class="line">├── initramfs.cpio       # 封裝的 rootfs</span><br><span class="line">└── rootfs/              # 實際的 rootfs 結構</span><br><span class="line">├── init             # 開機 init 腳本</span><br><span class="line">├── bin/</span><br><span class="line">│   ├── busybox</span><br><span class="line">│   └── sh -&gt; busybox</span><br><span class="line">├── proc/</span><br><span class="line">└── sys/</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="🛠️-步驟說明">🛠️ 步驟說明</h2>
+<h3 id="1-下載並編譯-BusyBox（靜態連結）">1. 下載並編譯 BusyBox（靜態連結）</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/mirror/busybox.git</span><br><span class="line"><span class="built_in">cd</span> busybox</span><br><span class="line">make distclean</span><br><span class="line">make defconfig</span><br><span class="line">````</span><br><span class="line"></span><br><span class="line">⚙️ 編輯 `.config` 啟用靜態連結：</span><br><span class="line"></span><br><span class="line">```bash</span><br><span class="line">make menuconfig</span><br><span class="line"><span class="comment"># -&gt; Settings -&gt; Build static binary (no shared libs) [*]</span></span><br></pre></td></tr></table></figure>
+<p>然後安裝到 rootfs：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make -j$(nproc)</span><br><span class="line">make CONFIG_PREFIX=../rootfs install</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="2-撰寫-init-腳本">2. 撰寫 init 腳本</h3>
+<p><code>rootfs/init</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">#!/bin/sh</span><br><span class="line">mount -t proc none /proc</span><br><span class="line">mount -t sysfs none /sys</span><br><span class="line">echo &quot;✅ Welcome to minimal rootfs!&quot;</span><br><span class="line">exec /bin/sh</span><br></pre></td></tr></table></figure>
+<p>接著更改為可執行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chmod +x rootfs/init</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="3-打包-initramfs">3. 打包 initramfs</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd rootfs</span><br><span class="line">find . | cpio -o --format=newc &gt; ../initramfs.cpio</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="4-使用-QEMU-開機">4. 使用 QEMU 開機</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">qemu-system-x86_64 \</span><br><span class="line">  -kernel ./bzImage \</span><br><span class="line">  -initrd ./initramfs.cpio \</span><br><span class="line">  -nographic \</span><br><span class="line">  -append &quot;console=ttyS0 init=/init&quot;</span><br></pre></td></tr></table></figure>
+<p>如果正常運作，你會看到 BusyBox 的 shell：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~ # </span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="🧪-常見錯誤排查">🧪 常見錯誤排查</h2>
+<h3 id="❌-Kernel-panic-error-2-ENOENT">❌ Kernel panic - error -2 (ENOENT)</h3>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Failed to execute /init (error -2)</span><br><span class="line">Kernel panic - not syncing: Requested init /init failed</span><br></pre></td></tr></table></figure>
+<p>✅ 解法：</p>
+<ul>
+<li><code>/init</code> 是腳本，要有正確的 shebang：<code>#!/bin/sh</code></li>
+<li><strong>BusyBox 必須使用靜態連結</strong>，否則會找不到動態 linker <code>/lib/ld-linux.so.2</code></li>
+<li>用 <code>file rootfs/bin/busybox</code> 確認：</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ELF 64-bit ... statically linked ...</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="🔍-靜態連結-vs-動態連結">🔍 靜態連結 vs 動態連結</h2>
+<table>
+<thead>
+<tr>
+<th>類型</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>靜態連結</td>
+<td>所有需要的函式庫都編譯進可執行檔，無需額外 <code>.so</code> 檔案</td>
+</tr>
+<tr>
+<td>動態連結</td>
+<td>執行時載入共享函式庫，如 <code>/lib64/ld-linux-x86-64.so.2</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>✅ 在 initramfs 或最小 rootfs 中，應該使用 <strong>靜態連結</strong> binary。</p>
+</blockquote>
+<hr>
+<h2 id="✅-驗證-checklist">✅ 驗證 checklist</h2>
+<table>
+<thead>
+<tr>
+<th>檢查項</th>
+<th>命令</th>
+<th>預期結果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/bin/sh</code> 是否存在</td>
+<td><code>ls -l rootfs/bin/sh</code></td>
+<td>應該為 <code>sh -&gt; busybox</code> 的符號連結</td>
+</tr>
+<tr>
+<td>busybox 連結方式</td>
+<td><code>file rootfs/bin/busybox</code></td>
+<td>應為 <code>statically linked</code></td>
+</tr>
+<tr>
+<td>init 是否可執行</td>
+<td><code>chmod +x rootfs/init</code></td>
+<td>否則會出現權限錯誤</td>
+</tr>
+<tr>
+<td>是否有掛載 proc/sys</td>
+<td><code>mount -t proc none /proc</code> 等</td>
+<td>否則很多工具會錯誤或無法執行</td>
+</tr>
+</tbody>
+</table>
+<hr>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://bob7452.github.io/2025/03/15/Simple-Rootfs-Implement/" data-id="cmd9u1ry40001d5j60iwd1k5f" data-title="Simple Rootfs" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li></ul>
 
     </footer>
   </div>
@@ -437,7 +578,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://bob7452.github.io/2025/03/15/hello-world/" data-id="cmd9swnw10003udj60231hw3c" data-title="Hello World" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://bob7452.github.io/2025/03/15/hello-world/" data-id="cmd9u1ry70005d5j6bmn2etes" data-title="Hello World" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -462,7 +603,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Driver/" rel="tag">Linux - Driver</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Understanding-Series/" rel="tag">Linux - Understanding Series</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Driver/" rel="tag">Linux - Driver</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Understanding-Series/" rel="tag">Linux - Understanding Series</a></li></ul>
     </div>
   </div>
 
@@ -472,7 +613,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Linux-Driver/" style="font-size: 10px;">Linux - Driver</a> <a href="/tags/Linux-Understanding-Series/" style="font-size: 20px;">Linux - Understanding Series</a>
+      <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Driver/" style="font-size: 10px;">Linux - Driver</a> <a href="/tags/Linux-Understanding-Series/" style="font-size: 20px;">Linux - Understanding Series</a>
     </div>
   </div>
 
@@ -503,6 +644,10 @@
         
           <li>
             <a href="/2025/03/15/Linux-NVMe-Driver/">Linux NVMe Driver</a>
+          </li>
+        
+          <li>
+            <a href="/2025/03/15/Simple-Rootfs-Implement/">Simple Rootfs</a>
           </li>
         
           <li>
