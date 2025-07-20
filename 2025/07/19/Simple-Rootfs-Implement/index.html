@@ -14,7 +14,7 @@
 <meta property="og:description" content="Minimal Linux RootFS on x86 with QEMU &amp; BusyBox 這份說明整理了從 0 建立一個可開機的 x86 Linux RootFS 的過程，適合用來練習 Linux Kernel Modules 與 RootFS 結構。  目標  使用 BusyBox 製作最簡 RootFS 利用 QEMU 執行 x86 kernel 理解 init 流程與錯誤排查">
 <meta property="og:locale" content="zh_TW">
 <meta property="article:published_time" content="2025-07-19T11:55:00.000Z">
-<meta property="article:modified_time" content="2025-07-20T02:50:52.385Z">
+<meta property="article:modified_time" content="2025-07-20T06:32:08.746Z">
 <meta property="article:author" content="Tao">
 <meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary">
@@ -108,9 +108,11 @@
 </ul>
 <hr>
 <h2 id="檔案與目錄結構">檔案與目錄結構</h2>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">kernel-rootfs/</span><br><span class="line">├── bzImage              # 已編譯的 Linux Kernel (x86)</span><br><span class="line">├── initramfs.cpio       # 封裝的 rootfs</span><br><span class="line">└── rootfs/              # 實際的 rootfs 結構</span><br><span class="line">├── init             # 開機 init 腳本</span><br><span class="line">├── bin/</span><br><span class="line">│   ├── busybox</span><br><span class="line">│   └── sh -&gt; busybox</span><br><span class="line">├── proc/</span><br><span class="line">└── sys/</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">kernel-rootfs/</span><br><span class="line">├── linux</span><br><span class="line">    └──  arch</span><br><span class="line">      └── x86</span><br><span class="line">        └── boot</span><br><span class="line">          └── bzImage              # 已編譯的 Linux Kernel (x86)</span><br><span class="line">├── rootfs.cpio       # 封裝的 rootfs</span><br><span class="line">└── rootfs/              # 實際的 rootfs 結構</span><br><span class="line">├── init             # 開機 init 腳本</span><br><span class="line">├── bin/</span><br><span class="line">│   ├── busybox</span><br><span class="line">│   └── sh -&gt; busybox</span><br><span class="line">├── proc/</span><br><span class="line">└── sys/</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 <hr>
 <h2 id="步驟說明">步驟說明</h2>
+<h3 id="0：取得-Linux-kernel">0：取得 Linux kernel</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> --depth=1 https://github.com/torvalds/linux.git</span><br><span class="line"><span class="built_in">cd</span> linux</span><br><span class="line">make defconfig</span><br><span class="line">make -j$(<span class="built_in">nproc</span>)</span><br></pre></td></tr></table></figure>
 <h3 id="1-下載並編譯-BusyBox（靜態連結）">1. 下載並編譯 BusyBox（靜態連結）</h3>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/mirror/busybox.git</span><br><span class="line"><span class="built_in">cd</span> busybox</span><br><span class="line">make distclean</span><br><span class="line">make defconfig</span><br></pre></td></tr></table></figure>
 <hr>
@@ -126,10 +128,10 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chmod +x rootfs/init</span><br></pre></td></tr></table></figure>
 <hr>
 <h3 id="3-打包-initramfs">3. 打包 initramfs</h3>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd rootfs</span><br><span class="line">find . | cpio -o --format=newc &gt; ../initramfs.cpio</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd rootfs</span><br><span class="line">find . | cpio -o --format=newc &gt; ../rootfs.cpio</span><br></pre></td></tr></table></figure>
 <hr>
 <h3 id="4-使用-QEMU-開機">4. 使用 QEMU 開機</h3>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">qemu-system-x86_64 \</span><br><span class="line">  -kernel ./bzImage \</span><br><span class="line">  -initrd ./initramfs.cpio \</span><br><span class="line">  -nographic \</span><br><span class="line">  -append &quot;console=ttyS0 init=/init&quot;</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">qemu-system-x86_64 \</span><br><span class="line">  -kernel linux/arch/x86/boot/bzImage \</span><br><span class="line">  -initrd rootfs.cpio \</span><br><span class="line">  -nographic \</span><br><span class="line">  -append <span class="string">&quot;console=ttyS0 init=/init&quot;</span></span><br></pre></td></tr></table></figure>
 <p>如果正常運作，你會看到 BusyBox 的 shell：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">~ # </span><br></pre></td></tr></table></figure>
 <hr>
