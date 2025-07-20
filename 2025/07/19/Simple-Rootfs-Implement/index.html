@@ -14,7 +14,7 @@
 <meta property="og:description" content="Minimal Linux RootFS on x86 with QEMU &amp; BusyBox 這份說明整理了從 0 建立一個可開機的 x86 Linux RootFS 的過程，適合用來練習 Linux Kernel Modules 與 RootFS 結構。  目標  使用 BusyBox 製作最簡 RootFS 利用 QEMU 執行 x86 kernel 理解 init 流程與錯誤排查">
 <meta property="og:locale" content="zh_TW">
 <meta property="article:published_time" content="2025-07-19T11:55:00.000Z">
-<meta property="article:modified_time" content="2025-07-20T02:49:31.103Z">
+<meta property="article:modified_time" content="2025-07-20T02:50:52.385Z">
 <meta property="article:author" content="Tao">
 <meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary">
@@ -112,7 +112,10 @@
 <hr>
 <h2 id="步驟說明">步驟說明</h2>
 <h3 id="1-下載並編譯-BusyBox（靜態連結）">1. 下載並編譯 BusyBox（靜態連結）</h3>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/mirror/busybox.git</span><br><span class="line"><span class="built_in">cd</span> busybox</span><br><span class="line">make distclean</span><br><span class="line">make defconfig</span><br><span class="line">````</span><br><span class="line"></span><br><span class="line">--- </span><br><span class="line">編輯 `.config` 啟用靜態連結：</span><br><span class="line"></span><br><span class="line">```bash</span><br><span class="line">make menuconfig</span><br><span class="line"><span class="comment"># -&gt; Settings -&gt; Build static binary (no shared libs) [*]</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/mirror/busybox.git</span><br><span class="line"><span class="built_in">cd</span> busybox</span><br><span class="line">make distclean</span><br><span class="line">make defconfig</span><br></pre></td></tr></table></figure>
+<hr>
+<p>編輯 <code>.config</code> 啟用靜態連結：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make menuconfig</span><br><span class="line">-&gt; Settings -&gt; Build static binary (no shared libs) [*]</span><br></pre></td></tr></table></figure>
 <p>然後安裝到 rootfs：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make -j$(nproc)</span><br><span class="line">make CONFIG_PREFIX=../rootfs install</span><br></pre></td></tr></table></figure>
 <hr>
