@@ -4,17 +4,17 @@
   <meta charset="utf-8">
   
   
-  <title>Simple Rootfs | Tao&#39;s Blog</title>
+  <title>Simple Rootfs [0] | Tao&#39;s Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <meta name="description" content="Minimal Linux RootFS on x86 with QEMU &amp; BusyBox 這份說明整理了從 0 建立一個可開機的 x86 Linux RootFS 的過程，適合用來練習 Linux Kernel Modules 與 RootFS 結構。  目標  使用 BusyBox 製作最簡 RootFS 利用 QEMU 執行 x86 kernel 理解 init 流程與錯誤排查">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Simple Rootfs">
-<meta property="og:url" content="https://bob7452.github.io/2025/07/19/Simple-Rootfs-Implement/index.html">
+<meta property="og:title" content="Simple Rootfs [0]">
+<meta property="og:url" content="https://bob7452.github.io/2025/07/19/[0]%20%20Simple-Rootfs-Implement/index.html">
 <meta property="og:site_name" content="Tao&#39;s Blog">
 <meta property="og:description" content="Minimal Linux RootFS on x86 with QEMU &amp; BusyBox 這份說明整理了從 0 建立一個可開機的 x86 Linux RootFS 的過程，適合用來練習 Linux Kernel Modules 與 RootFS 結構。  目標  使用 BusyBox 製作最簡 RootFS 利用 QEMU 執行 x86 kernel 理解 init 流程與錯誤排查">
 <meta property="og:locale" content="zh_TW">
 <meta property="article:published_time" content="2025-07-19T11:55:00.000Z">
-<meta property="article:modified_time" content="2025-07-20T06:47:52.642Z">
+<meta property="article:modified_time" content="2025-08-02T04:17:42.507Z">
 <meta property="article:author" content="Tao">
 <meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary">
@@ -74,9 +74,9 @@
 </header>
 
       <div class="outer">
-        <section id="main"><article id="post-Simple-Rootfs-Implement" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+        <section id="main"><article id="post-[0]  Simple-Rootfs-Implement" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2025/07/19/Simple-Rootfs-Implement/" class="article-date">
+    <a href="/2025/07/19/%5B0%5D%20%20Simple-Rootfs-Implement/" class="article-date">
   <time class="dt-published" datetime="2025-07-19T11:55:00.000Z" itemprop="datePublished">2025-07-19</time>
 </a>
     
@@ -88,7 +88,7 @@
         
   
     <h1 class="p-name article-title" itemprop="headline name">
-      Simple Rootfs
+      Simple Rootfs [0]
     </h1>
   
 
@@ -208,7 +208,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://bob7452.github.io/2025/07/19/Simple-Rootfs-Implement/" data-id="cmdbbev1g0001o3j67k8yamr7" data-title="Simple Rootfs" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://bob7452.github.io/2025/07/19/[0]%20%20Simple-Rootfs-Implement/" data-id="cmdtqqujq00007wj6dobja7k6" data-title="Simple Rootfs [0]" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -219,6 +219,15 @@
   
     
 <nav id="article-nav">
+  
+    <a href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Neuer</strong>
+      <div class="article-nav-title">
+        
+          Simple Rootfs [1]
+        
+      </div>
+    </a>
   
   
     <a href="/2025/03/22/Understanding-in-the-Linux-Kernel/" id="article-nav-older" class="article-nav-link-wrap">
@@ -253,7 +262,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Linux/" style="font-size: 10px;">Linux</a> <a href="/tags/Linux-Driver/" style="font-size: 10px;">Linux - Driver</a> <a href="/tags/Linux-Understanding-Series/" style="font-size: 20px;">Linux - Understanding Series</a>
+      <a href="/tags/Linux/" style="font-size: 20px;">Linux</a> <a href="/tags/Linux-Driver/" style="font-size: 10px;">Linux - Driver</a> <a href="/tags/Linux-Understanding-Series/" style="font-size: 20px;">Linux - Understanding Series</a>
     </div>
   </div>
 
@@ -262,7 +271,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archiv</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/07/">七月 2025</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/03/">三月 2025</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/08/">八月 2025</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/07/">七月 2025</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/03/">三月 2025</a></li></ul>
     </div>
   </div>
 
@@ -275,7 +284,11 @@
       <ul>
         
           <li>
-            <a href="/2025/07/19/Simple-Rootfs-Implement/">Simple Rootfs</a>
+            <a href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement/">Simple Rootfs [1]</a>
+          </li>
+        
+          <li>
+            <a href="/2025/07/19/%5B0%5D%20%20Simple-Rootfs-Implement/">Simple Rootfs [0]</a>
           </li>
         
           <li>
@@ -288,10 +301,6 @@
         
           <li>
             <a href="/2025/03/15/Linux-NVMe-Driver/">Linux NVMe Driver</a>
-          </li>
-        
-          <li>
-            <a href="/2025/03/15/hello-world/">Hello World</a>
           </li>
         
       </ul>
