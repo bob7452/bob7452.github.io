@@ -71,6 +71,130 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-[3]  Simple-Rootfs-Implement" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/08/03/%5B3%5D%20%20Simple-Rootfs-Implement/" class="article-date">
+  <time class="dt-published" datetime="2025-08-03T10:07:00.000Z" itemprop="datePublished">2025-08-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2025/08/03/%5B3%5D%20%20Simple-Rootfs-Implement/">Simple Rootfs [3]</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1>📘 Chapter 3 - Advanced <code>sysfs</code> with <code>kobject</code>: Multiple Attributes and Nested Directories</h1>
+<h2 id="🎯-Goal">🎯 Goal</h2>
+<p>Create a structured sysfs interface with multiple attributes and nested directories, allowing both reading and writing from userspace, and triggering simple actions on write.</p>
+<hr>
+<h2 id="🧱-Concepts-Covered">🧱 Concepts Covered</h2>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kobject_create_and_add()</code></td>
+<td>Create and add a kobject (directory) under <code>/sys</code></td>
+</tr>
+<tr>
+<td><code>kobj_attribute</code></td>
+<td>Represents a readable/writable sysfs file (attribute)</td>
+</tr>
+<tr>
+<td><code>show</code> / <code>store</code></td>
+<td>Callbacks for reading and writing attribute values</td>
+</tr>
+<tr>
+<td>Nested kobjects</td>
+<td>Organize attributes into hierarchical directories</td>
+</tr>
+<tr>
+<td>Action triggers</td>
+<td>Implement side effects inside <code>store()</code> callbacks</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="📂-Filesystem-Layout">📂 Filesystem Layout</h2>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/sys/kernel/hello_sysfs/</span><br><span class="line">├── value</span><br><span class="line">├── mode</span><br><span class="line">├── status</span><br><span class="line">└── config/</span><br><span class="line">    ├── enable</span><br><span class="line">    └── debug_level</span><br></pre></td></tr></table></figure>
+<p>Each file is a read/write interface accessible via <code>cat</code> and <code>echo</code>.</p>
+<hr>
+<h2 id="🧪-Complete-Code-Snippet">🧪 Complete Code Snippet</h2>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kobject.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/sysfs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/string.h&gt;</span></span></span><br><span class="line"></span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;Anonymous&quot;</span>);</span><br><span class="line">MODULE_DESCRIPTION(<span class="string">&quot;Advanced sysfs example with multiple attributes&quot;</span>);</span><br><span class="line">MODULE_VERSION(<span class="string">&quot;0.2&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">kobject</span> *<span class="title">hello_kobj</span>;</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">kobject</span> *<span class="title">config_kobj</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">char</span> value_str[<span class="number">128</span>] = <span class="string">&quot;default&quot;</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">char</span> mode_str[<span class="number">16</span>] = <span class="string">&quot;normal&quot;</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> status = <span class="number">1</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> debug_level = <span class="number">0</span>;</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> enabled = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">value_show</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">char</span> *buf)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sprintf</span>(buf, <span class="string">&quot;%s\n&quot;</span>, value_str);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">value_store</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">const</span> <span class="type">char</span> *buf, <span class="type">size_t</span> count)</span> &#123;</span><br><span class="line">    <span class="built_in">snprintf</span>(value_str, <span class="keyword">sizeof</span>(value_str), <span class="string">&quot;%.*s&quot;</span>, (<span class="type">int</span>)(count - <span class="number">1</span>), buf);  <span class="comment">// trim newline</span></span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">kobj_attribute</span> <span class="title">value_attr</span> =</span> __ATTR(value, <span class="number">0644</span>, value_show, value_store);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">mode_show</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">char</span> *buf)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sprintf</span>(buf, <span class="string">&quot;%s\n&quot;</span>, mode_str);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">mode_store</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">const</span> <span class="type">char</span> *buf, <span class="type">size_t</span> count)</span> &#123;</span><br><span class="line">    <span class="built_in">snprintf</span>(mode_str, <span class="keyword">sizeof</span>(mode_str), <span class="string">&quot;%.*s&quot;</span>, (<span class="type">int</span>)(count - <span class="number">1</span>), buf);</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">kobj_attribute</span> <span class="title">mode_attr</span> =</span> __ATTR(mode, <span class="number">0644</span>, mode_show, mode_store);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">status_show</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">char</span> *buf)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sprintf</span>(buf, <span class="string">&quot;%d\n&quot;</span>, status);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">status_store</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">const</span> <span class="type">char</span> *buf, <span class="type">size_t</span> count)</span> &#123;</span><br><span class="line">    <span class="built_in">sscanf</span>(buf, <span class="string">&quot;%d&quot;</span>, &amp;status);</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">kobj_attribute</span> <span class="title">status_attr</span> =</span> __ATTR(status, <span class="number">0644</span>, status_show, status_store);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">enable_show</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">char</span> *buf)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sprintf</span>(buf, <span class="string">&quot;%d\n&quot;</span>, enabled);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">enable_store</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">const</span> <span class="type">char</span> *buf, <span class="type">size_t</span> count)</span> &#123;</span><br><span class="line">    <span class="built_in">sscanf</span>(buf, <span class="string">&quot;%d&quot;</span>, &amp;enabled);</span><br><span class="line">    pr_info(<span class="string">&quot;sysfs: enable changed to %d\n&quot;</span>, enabled);  <span class="comment">// simulate action on write</span></span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">kobj_attribute</span> <span class="title">enable_attr</span> =</span> __ATTR(enable, <span class="number">0644</span>, enable_show, enable_store);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">debug_show</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">char</span> *buf)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">sprintf</span>(buf, <span class="string">&quot;%d\n&quot;</span>, debug_level);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">debug_store</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">struct</span> kobj_attribute *attr, <span class="type">const</span> <span class="type">char</span> *buf, <span class="type">size_t</span> count)</span> &#123;</span><br><span class="line">    <span class="built_in">sscanf</span>(buf, <span class="string">&quot;%d&quot;</span>, &amp;debug_level);</span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">kobj_attribute</span> <span class="title">debug_attr</span> =</span> __ATTR(debug_level, <span class="number">0644</span>, debug_show, debug_store);</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">hello_init</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    <span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">    hello_kobj = kobject_create_and_add(<span class="string">&quot;hello_sysfs&quot;</span>, kernel_kobj);</span><br><span class="line">    <span class="keyword">if</span> (!hello_kobj)</span><br><span class="line">        <span class="keyword">return</span> -ENOMEM;</span><br><span class="line"></span><br><span class="line">    ret = sysfs_create_file(hello_kobj, &amp;value_attr.attr);</span><br><span class="line">    <span class="keyword">if</span> (ret) &#123;</span><br><span class="line">        pr_err(<span class="string">&quot;Failed to create value attribute\n&quot;</span>);</span><br><span class="line">        kobject_put(hello_kobj);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ret = sysfs_create_file(hello_kobj, &amp;mode_attr.attr);</span><br><span class="line">    <span class="keyword">if</span> (ret) &#123;</span><br><span class="line">        pr_err(<span class="string">&quot;Failed to create mode attribute\n&quot;</span>);</span><br><span class="line">        kobject_put(hello_kobj);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ret = sysfs_create_file(hello_kobj, &amp;status_attr.attr);</span><br><span class="line">    <span class="keyword">if</span> (ret) &#123;</span><br><span class="line">        pr_err(<span class="string">&quot;Failed to create status attribute\n&quot;</span>);</span><br><span class="line">        kobject_put(hello_kobj);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    config_kobj = kobject_create_and_add(<span class="string">&quot;config&quot;</span>, hello_kobj);</span><br><span class="line">    <span class="keyword">if</span> (!config_kobj) &#123;</span><br><span class="line">        pr_err(<span class="string">&quot;Failed to create config kobject\n&quot;</span>);</span><br><span class="line">        kobject_put(hello_kobj);</span><br><span class="line">        <span class="keyword">return</span> -ENOMEM;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ret = sysfs_create_file(config_kobj, &amp;enable_attr.attr);</span><br><span class="line">    <span class="keyword">if</span> (ret) &#123;</span><br><span class="line">        pr_err(<span class="string">&quot;Failed to create enable attribute\n&quot;</span>);</span><br><span class="line">        kobject_put(config_kobj);</span><br><span class="line">        kobject_put(hello_kobj);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ret = sysfs_create_file(config_kobj, &amp;debug_attr.attr);</span><br><span class="line">    <span class="keyword">if</span> (ret) &#123;</span><br><span class="line">        pr_err(<span class="string">&quot;Failed to create debug_level attribute\n&quot;</span>);</span><br><span class="line">        kobject_put(config_kobj);</span><br><span class="line">        kobject_put(hello_kobj);</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    pr_info(<span class="string">&quot;sysfs: hello_sysfs initialized\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">hello_exit</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    sysfs_remove_file(hello_kobj, &amp;value_attr.attr);</span><br><span class="line">    sysfs_remove_file(hello_kobj, &amp;mode_attr.attr);</span><br><span class="line">    sysfs_remove_file(hello_kobj, &amp;status_attr.attr);</span><br><span class="line"></span><br><span class="line">    sysfs_remove_file(config_kobj, &amp;enable_attr.attr);</span><br><span class="line">    sysfs_remove_file(config_kobj, &amp;debug_attr.attr);</span><br><span class="line"></span><br><span class="line">    kobject_put(config_kobj);</span><br><span class="line">    kobject_put(hello_kobj);</span><br><span class="line"></span><br><span class="line">    pr_info(<span class="string">&quot;sysfs: hello_sysfs removed\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(hello_init);</span><br><span class="line">module_exit(hello_exit);</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="🔧-Usage-Examples">🔧 Usage Examples</h2>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Read current value</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/hello_sysfs/value</span><br><span class="line"></span><br><span class="line"><span class="comment"># Write new value</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Linux sysfs is cool&quot;</span> &gt; /sys/kernel/hello_sysfs/value</span><br><span class="line"></span><br><span class="line"><span class="comment"># Read/write numeric status</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/hello_sysfs/status</span><br><span class="line"><span class="built_in">echo</span> 0 &gt; /sys/kernel/hello_sysfs/status</span><br><span class="line"></span><br><span class="line"><span class="comment"># Nested config directory files</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/hello_sysfs/config/enable</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/hello_sysfs/config/enable</span><br></pre></td></tr></table></figure>
+<hr>
+<h2 id="🔑-Key-Differences-Between-proc-and-sysfs-Here">🔑 Key Differences Between <code>/proc</code> and <code>sysfs</code> Here</h2>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th><code>/proc</code></th>
+<th><code>sysfs</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Purpose</td>
+<td>Mainly info &amp; debugging</td>
+<td>Structured config &amp; control</td>
+</tr>
+<tr>
+<td>Organization</td>
+<td>Usually flat</td>
+<td>Hierarchical (dirs + attributes)</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td>Custom</td>
+<td>Integrated with kernel object model</td>
+</tr>
+<tr>
+<td>Tool support</td>
+<td>Minimal</td>
+<td>udev, systemd, hotplug support</td>
+</tr>
+<tr>
+<td>Use cases</td>
+<td>Debug logs, runtime info</td>
+<td>Device config, status, triggers</td>
+</tr>
+</tbody>
+</table>
+<hr>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://bob7452.github.io/2025/08/03/[3]%20%20Simple-Rootfs-Implement/" data-id="cmdvip5310001upj691r10pgd" data-title="Simple Rootfs [3]" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-[2]  Simple-Rootfs-Implement" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2025/08/03/%5B2%5D%20%20Simple-Rootfs-Implement/" class="article-date">
@@ -182,9 +306,9 @@
 
 
   
-    <article id="post-[1]  Simple-Rootfs-Implement copy" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+    <article id="post-[1]  Simple-Rootfs-Implement" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement%20copy/" class="article-date">
+    <a href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement/" class="article-date">
   <time class="dt-published" datetime="2025-08-02T04:15:00.000Z" itemprop="datePublished">2025-08-02</time>
 </a>
     
@@ -196,7 +320,7 @@
         
   
     <h1 itemprop="name">
-      <a class="p-name article-title" href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement%20copy/">Simple Rootfs [1]</a>
+      <a class="p-name article-title" href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement/">Simple Rootfs [1]</a>
     </h1>
   
 
@@ -257,7 +381,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://bob7452.github.io/2025/08/02/[1]%20%20Simple-Rootfs-Implement%20copy/" data-id="cmdvhx8f2000088j6278900ly" data-title="Simple Rootfs [1]" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://bob7452.github.io/2025/08/02/[1]%20%20Simple-Rootfs-Implement/" data-id="cmdvip52x0000upj6bmlhf28j" data-title="Simple Rootfs [1]" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -842,11 +966,15 @@
       <ul>
         
           <li>
+            <a href="/2025/08/03/%5B3%5D%20%20Simple-Rootfs-Implement/">Simple Rootfs [3]</a>
+          </li>
+        
+          <li>
             <a href="/2025/08/03/%5B2%5D%20%20Simple-Rootfs-Implement/">Simple Rootfs [2]</a>
           </li>
         
           <li>
-            <a href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement%20copy/">Simple Rootfs [1]</a>
+            <a href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement/">Simple Rootfs [1]</a>
           </li>
         
           <li>
@@ -855,10 +983,6 @@
         
           <li>
             <a href="/2025/03/22/Understanding-in-the-Linux-Kernel/">Understanding  in the Linux Kernel</a>
-          </li>
-        
-          <li>
-            <a href="/2025/03/22/Understanding-and-A-Comparison-of-Linux-Kernel-Cleanup-Commands/">Understanding A Comparison of Linux Kernel Cleanup Commands</a>
           </li>
         
       </ul>
