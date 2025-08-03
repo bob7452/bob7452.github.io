@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Simple Rootfs [2] | Tao&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="🧠 Linux Kernel Module: &#x2F;proc&#x2F;hello - Practice Notes 📌 Overview This example demonstrates how to write a simple Linux kernel module that creates a virtual file under &#x2F;proc&#x2F;hello:  Reading &#x2F;proc&#x2F;hello">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Simple Rootfs [2]">
+<meta property="og:url" content="https://bob7452.github.io/2025/08/03/[2]%20%20Simple-Rootfs-Implement/index.html">
+<meta property="og:site_name" content="Tao&#39;s Blog">
+<meta property="og:description" content="🧠 Linux Kernel Module: &#x2F;proc&#x2F;hello - Practice Notes 📌 Overview This example demonstrates how to write a simple Linux kernel module that creates a virtual file under &#x2F;proc&#x2F;hello:  Reading &#x2F;proc&#x2F;hello">
+<meta property="og:locale" content="zh_TW">
+<meta property="article:published_time" content="2025-08-03T09:45:00.000Z">
+<meta property="article:modified_time" content="2025-08-03T09:46:23.023Z">
+<meta property="article:author" content="Tao">
+<meta property="article:tag" content="Linux">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Tao's Blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Tao&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://bob7452.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-[2]  Simple-Rootfs-Implement" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/08/03/%5B2%5D%20%20Simple-Rootfs-Implement/" class="article-date">
+  <time class="dt-published" datetime="2025-08-03T09:45:00.000Z" itemprop="datePublished">2025-08-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Simple Rootfs [2]
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1>🧠 Linux Kernel Module: /proc/hello - Practice Notes</h1>
+<h2 id="📌-Overview">📌 Overview</h2>
+<p>This example demonstrates how to write a simple Linux kernel module that creates a virtual file under <code>/proc/hello</code>:</p>
+<ul>
+<li>Reading <code>/proc/hello</code> shows a greeting message.</li>
+<li>Writing to <code>/proc/hello</code> updates the message content.</li>
+</ul>
+<p>This is a great beginner-friendly exercise to understand how <code>/proc</code> and kernel modules interact.</p>
+<hr>
+<h2 id="📂-Final-Source-Code">📂 Final Source Code</h2>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/proc_fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/seq_file.h&gt;</span></span></span><br><span class="line"></span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;GPL&quot;</span>);</span><br><span class="line">MODULE_AUTHOR(<span class="string">&quot;Author&quot;</span>);</span><br><span class="line">MODULE_DESCRIPTION(<span class="string">&quot;/proc/hello demo&quot;</span>);</span><br><span class="line">MODULE_VERSION(<span class="string">&quot;0.1&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PROC_NAME <span class="string">&quot;hello&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MAX_BUF_LEN 128</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">char</span> hello_buf[MAX_BUF_LEN] = <span class="string">&quot;No message yet&quot;</span>;</span><br><span class="line">````</span><br><span class="line"></span><br><span class="line">### 🔍 Display <span class="title function_">Content</span> <span class="params">(Read Callback)</span></span><br><span class="line"></span><br><span class="line">```c</span><br><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">hello_show</span><span class="params">(<span class="keyword">struct</span> seq_file *m, <span class="type">void</span> *v)</span> &#123;</span><br><span class="line">    seq_printf(m, <span class="string">&quot;👋 Hello %s!\n&quot;</span>, hello_buf);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Uses <code>seq_file</code> API to print the message.</li>
+<li>Message comes from the buffer <code>hello_buf</code>, which can be updated by user writes.</li>
+</ul>
+<hr>
+<h3 id="🔓-Open-Callback">🔓 Open Callback</h3>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">hello_open</span><span class="params">(<span class="keyword">struct</span> inode *inode, <span class="keyword">struct</span> file *file)</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> single_open(file, hello_show, <span class="literal">NULL</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>single_open()</code> is used for simple read-only /proc files.</li>
+</ul>
+<hr>
+<h3 id="✍️-Write-Logic">✍️ Write Logic</h3>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">ssize_t</span> <span class="title function_">hello_write</span><span class="params">(<span class="keyword">struct</span> file *file, <span class="type">const</span> <span class="type">char</span> __user *buffer, <span class="type">size_t</span> count, <span class="type">loff_t</span> *ppos)</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (count &gt; <span class="keyword">sizeof</span>(hello_buf) - <span class="number">1</span>)</span><br><span class="line">        count = <span class="keyword">sizeof</span>(hello_buf) - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (copy_from_user(hello_buf, buffer, count))</span><br><span class="line">        <span class="keyword">return</span> -EFAULT;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (count &gt; <span class="number">0</span> &amp;&amp; hello_buf[count - <span class="number">1</span>] == <span class="string">&#x27;\n&#x27;</span>)</span><br><span class="line">        hello_buf[count - <span class="number">1</span>] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        hello_buf[count] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="🧩-Key-Points">🧩 Key Points:</h4>
+<ul>
+<li><code>count</code> is passed by the kernel, indicating how many bytes the user wants to write.</li>
+<li>To prevent buffer overflows, only <code>MAX_BUF_LEN - 1</code> bytes are copied.</li>
+<li>If the last character is a newline (<code>\n</code>), it’s removed for cleaner output.</li>
+<li>Uses <code>copy_from_user()</code> to safely copy data from userspace to kernel space.</li>
+</ul>
+<blockquote>
+<p>✅ Example:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Kernel modules are fun!&quot;</span> &gt; /proc/hello</span><br><span class="line"><span class="built_in">cat</span> /proc/hello</span><br><span class="line">👋 Hello Kernel modules are fun!</span><br></pre></td></tr></table></figure>
+</blockquote>
+<hr>
+<h3 id="🧷-Registering-and-Removing-the-proc-file">🧷 Registering and Removing the proc file</h3>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">proc_ops</span> <span class="title">hello_fops</span> =</span> &#123;</span><br><span class="line">    .proc_open    = hello_open,</span><br><span class="line">    .proc_read    = seq_read,</span><br><span class="line">    .proc_write   = hello_write,</span><br><span class="line">    .proc_lseek   = seq_lseek,</span><br><span class="line">    .proc_release = single_release,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>proc_ops</code> (available in Linux 5.6+) defines the file operations.</li>
+<li>Includes support for read, write, seek, and close.</li>
+</ul>
+<hr>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">hello_init</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    proc_create(PROC_NAME, <span class="number">0</span>, <span class="literal">NULL</span>, &amp;hello_fops);</span><br><span class="line">    pr_info(<span class="string">&quot;/proc/%s created\n&quot;</span>, PROC_NAME);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">hello_exit</span><span class="params">(<span class="type">void</span>)</span> &#123;</span><br><span class="line">    remove_proc_entry(PROC_NAME, <span class="literal">NULL</span>);</span><br><span class="line">    pr_info(<span class="string">&quot;/proc/%s removed\n&quot;</span>, PROC_NAME);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>proc_create()</code> creates the <code>/proc/hello</code> file during module load.</li>
+<li><code>remove_proc_entry()</code> removes the file during module unload.</li>
+</ul>
+<hr>
+<h2 id="🧪-Test-Procedure">🧪 Test Procedure</h2>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">insmod hello_proc.ko</span><br><span class="line"></span><br><span class="line"><span class="built_in">cat</span> /proc/hello</span><br><span class="line"><span class="comment"># 👋 Hello No message yet!</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;Linux rocks!&quot;</span> &gt; /proc/hello</span><br><span class="line"></span><br><span class="line"><span class="built_in">cat</span> /proc/hello</span><br><span class="line"><span class="comment"># 👋 Hello Linux rocks!</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>🧨 Note: Without handling newlines, output may break into multiple lines. This is handled in the <code>write</code> logic.</p>
+</blockquote>
+<hr>
+<h2 id="📚-Bonus-What-is-zu">📚 Bonus: What is <code>%zu</code>?</h2>
+<ul>
+<li><code>size_t</code> is an unsigned integer type used for memory sizes and lengths.</li>
+<li><code>%zu</code> is the correct format specifier for <code>size_t</code> in <code>printf()</code>-like functions.</li>
+<li><code>%z</code> is a length modifier; <code>%zu</code> means “unsigned size_t”.</li>
+</ul>
+<hr>
+<h2 id="✅-What-You-Learned">✅ What You Learned</h2>
+<ul>
+<li>How to create a virtual file under <code>/proc</code> using a kernel module.</li>
+<li>How to use <code>seq_file</code> to implement a clean read interface.</li>
+<li>How to use <code>copy_from_user()</code> to receive data from user space.</li>
+<li>How to handle newline trimming and buffer safety.</li>
+<li>How to set up and tear down a kernel module cleanly.</li>
+</ul>
+<hr>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://bob7452.github.io/2025/08/03/[2]%20%20Simple-Rootfs-Implement/" data-id="cmdvhx8f4000188j6ewzq52zp" data-title="Simple Rootfs [2]" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement%20copy/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Älter</strong>
+      <div class="article-nav-title">Simple Rootfs [1]</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux/" rel="tag">Linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Driver/" rel="tag">Linux - Driver</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Linux-Understanding-Series/" rel="tag">Linux - Understanding Series</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Linux/" style="font-size: 20px;">Linux</a> <a href="/tags/Linux-Driver/" style="font-size: 10px;">Linux - Driver</a> <a href="/tags/Linux-Understanding-Series/" style="font-size: 15px;">Linux - Understanding Series</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/08/">八月 2025</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/07/">七月 2025</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2025/03/">三月 2025</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">letzter Beitrag</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2025/08/03/%5B2%5D%20%20Simple-Rootfs-Implement/">Simple Rootfs [2]</a>
+          </li>
+        
+          <li>
+            <a href="/2025/08/02/%5B1%5D%20%20Simple-Rootfs-Implement%20copy/">Simple Rootfs [1]</a>
+          </li>
+        
+          <li>
+            <a href="/2025/07/19/%5B0%5D%20%20Simple-Rootfs-Implement/">Simple Rootfs [0]</a>
+          </li>
+        
+          <li>
+            <a href="/2025/03/22/Understanding-in-the-Linux-Kernel/">Understanding  in the Linux Kernel</a>
+          </li>
+        
+          <li>
+            <a href="/2025/03/22/Understanding-and-A-Comparison-of-Linux-Kernel-Cleanup-Commands/">Understanding A Comparison of Linux Kernel Cleanup Commands</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2025 Tao<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
